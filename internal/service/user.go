@@ -1,0 +1,245 @@
+package service
+
+import (
+	"errors"
+	"fmt"
+	"github.com/dlclark/regexp2"
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	http2 "webbook/http"
+	"webbook/internal/domain"
+	"webbook/internal/respository"
+	"webbook/internal/web/middleware"
+)
+
+const (
+	email    = `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
+	password = `^(?=.*\d)(?=.*[A-z])[\da-zA-Z]{8,}$$`
+	birthDay = `^d{4}-d{2}-d{2}$`
+)
+
+type UseService struct {
+	email    *regexp2.Regexp
+	password *regexp2.Regexp
+	birthDay *regexp2.Regexp
+	repo     *respository.UserRepository
+}
+
+var (
+	ErrEmail                 = respository.ErrUserEmailErr
+	ErrEmailOrPaawordIsWrong = respository.ErrEmailOrPassword
+)
+
+func NewUseService(repository *respository.UserRepository) *UseService {
+	return &UseService{
+		email:    regexp2.MustCompile(email, regexp2.None),
+		password: regexp2.MustCompile(password, regexp2.None),
+		birthDay: regexp2.MustCompile(birthDay, regexp2.None),
+		repo:     repository,
+	}
+}
+func (U *UseService) SignUp(ctx *gin.Context) {
+	var reqUser = &domain.ReqSingUpUser{}
+	var res = &http2.Response{}
+	if ctx.Bind(reqUser) != nil {
+
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("不是json格式").Error()
+		res.Responses(ctx)
+		return
+	}
+	isEmail, err := U.email.MatchString(reqUser.Email)
+	if err != nil {
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("系统错误").Error()
+		res.Responses(ctx)
+		return
+	}
+	if !isEmail {
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("邮箱格式错误").Error()
+		res.Responses(ctx)
+		return
+	}
+	isPassword, err := U.password.MatchString(reqUser.Password)
+	if err != nil {
+		fmt.Println(err)
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("系统错误").Error()
+		res.Responses(ctx)
+		return
+	}
+	if !isPassword {
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("密码格式错误").Error()
+		res.Responses(ctx)
+		return
+	}
+	if reqUser.Password != reqUser.ConfirmPassword {
+		res.Code = http.StatusBadRequest
+		res.Msg = errors.New("两次密码不一致").Error()
+		res.Responses(ctx)
+		return
+	}
+	if err != nil {
+		res.Code = http.StatusNotAcceptable
+		res.Msg = errors.New("系统错误").Error()
+		res.Responses(ctx)
+	}
+	var user = &domain.User{}
+	user.Email = reqUser.Email
+	user.Password = reqUser.Password
+	err = U.repo.Create(ctx, user)
+	if errors.Is(err, ErrEmail) {
+		res.Code = http.StatusBadRequest
+		res.Msg = "账号已注册"
+		res.Responses(ctx)
+		return
+	}
+	if err != nil {
+		res.Code = http.StatusNotExtended
+		res.Msg = "系统错误,注册失败"
+		res.Responses(ctx)
+		return
+	}
+	res.Code = http.StatusOK
+	res.Msg = "注册成功"
+	res.Responses(ctx)
+	return
+}
+func (U *UseService) Login(ctx *gin.Context) {
+	var req = &domain.ReqLoginUser{}
+	var res = &http2.Response{}
+	if ctx.Bind(req) != nil {
+		res.Code = http.StatusBadRequest
+		res.Msg = "数据格式不符合规范"
+	}
+	userEmail, err := U.repo.GetUserInfo(ctx, req)
+	if err == ErrEmailOrPaawordIsWrong {
+		res.Code = http.StatusFailedDependency
+		res.Msg = "账号或者密码错误"
+		res.Responses(ctx)
+		return
+	}
+	if err != nil {
+		res.Code = http.StatusInternalServerError
+		res.Msg = "系统错误，登陆失败"
+		res.Responses(ctx)
+		return
+	}
+	session := sessions.Default(ctx)
+	session.Options(sessions.Options{
+		MaxAge: 900,
+	})
+	session.Set(middleware.SessionIDKeyName, userEmail)
+	err = session.Save()
+	if err != nil {
+		res.Code = http.StatusInternalServerError
+		res.Msg = "系统错误，登录失败"
+		return
+	}
+
+	res.Code = http.StatusOK
+	res.Msg = "登录成功"
+	res.Responses(ctx)
+	return
+}
+func (U *UseService) Edit(ctx *gin.Context) {
+	type Edit struct {
+		UserName      string `json:"userName"`
+		Email         string `json:"email"`
+		PersonProfile string `json:"personProfile"`
+		BirthDay      string `json:"birthDay"`
+	}
+	var info Edit
+	var respon = &http2.Response{}
+	if ctx.Bind(&info) != nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "请求参数不符合规范"
+		respon.Responses(ctx)
+		return
+	}
+	if len(info.UserName) > 15 || len(info.UserName) <= 0 {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "昵称不符合规则"
+		respon.Responses(ctx)
+		return
+	}
+	if len(info.PersonProfile) > 200 {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "个人简介过长"
+		respon.Responses(ctx)
+		return
+	}
+	isBirthDay, err := U.birthDay.MatchString(info.BirthDay)
+	if err != nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "系统错误"
+		respon.Responses(ctx)
+		return
+	}
+	if isBirthDay {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "生日日期格式不对"
+		respon.Responses(ctx)
+		return
+	}
+	email := sessions.Default(ctx).Get(middleware.SessionIDKeyName)
+	var req domain.Profile
+	req.Email = email.(string)
+	req.Birthday = info.BirthDay
+	req.UserName = info.UserName
+	req.PersonalProfile = info.PersonProfile
+	profileInfo, err := U.repo.GetProfileInfo(ctx, email)
+	if err != nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "系统错误"
+		respon.Responses(ctx)
+		return
+	}
+	if profileInfo.Email != "" {
+		err = U.repo.UpdateProfile(ctx, &req)
+		if err != nil {
+			respon.Code = http.StatusBadRequest
+			respon.Msg = "编辑失败"
+			respon.Responses(ctx)
+			return
+		}
+		respon.Code = http.StatusOK
+		respon.Msg = "成功"
+		respon.Data = req
+		respon.Responses(ctx)
+		return
+	}
+	err = U.repo.CreateProfile(ctx, &req)
+	if err != nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "编辑失败"
+		respon.Responses(ctx)
+		return
+	}
+	respon.Code = http.StatusOK
+	respon.Msg = "编辑成功"
+	respon.Data = req
+	respon.Responses(ctx)
+	return
+}
+func (U *UseService) Profile(ctx *gin.Context) {
+	var resp = &http2.Response{}
+	session := sessions.Default(ctx)
+	email := session.Get(middleware.SessionIDKeyName)
+	info, err := U.repo.GetProfileInfo(ctx, email)
+	if err != nil {
+		resp.Code = http.StatusBadRequest
+		resp.Msg = "查询失败"
+		resp.Responses(ctx)
+		return
+	}
+	resp.Code = http.StatusOK
+	resp.Msg = "成功"
+	resp.Data = info
+	resp.Responses(ctx)
+	return
+
+}
