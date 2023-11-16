@@ -6,7 +6,9 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"time"
 	http2 "webbook/http"
 	"webbook/internal/domain"
 	"webbook/internal/respository"
@@ -128,17 +130,22 @@ func (U *UseService) Login(ctx *gin.Context) {
 		res.Responses(ctx)
 		return
 	}
-	session := sessions.Default(ctx)
-	session.Options(sessions.Options{
-		MaxAge: 900,
+	//openSession(ctx, userEmail, res) //开启session
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
+		UserEmail: userEmail,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
+		},
 	})
-	session.Set(middleware.SessionIDKeyName, userEmail)
-	err = session.Save()
+	signedString, err := token.SignedString([]byte(middleware.JWTkey))
 	if err != nil {
+		fmt.Println(err)
 		res.Code = http.StatusInternalServerError
-		res.Msg = "系统错误，登录失败"
+		res.Msg = "系统错误"
+		res.Responses(ctx)
 		return
 	}
+	ctx.Header("jwt-token", signedString)
 
 	res.Code = http.StatusOK
 	res.Msg = "登录成功"
@@ -227,9 +234,14 @@ func (U *UseService) Edit(ctx *gin.Context) {
 }
 func (U *UseService) Profile(ctx *gin.Context) {
 	var resp = &http2.Response{}
-	session := sessions.Default(ctx)
-	email := session.Get(middleware.SessionIDKeyName)
-	info, err := U.repo.GetProfileInfo(ctx, email)
+	//session := sessions.Default(ctx)
+	//email := session.Get(middleware.SessionIDKeyName)
+	value, exists := ctx.Get("email")
+	if !exists {
+		fmt.Println("未拿到数据")
+		return
+	}
+	info, err := U.repo.GetProfileInfo(ctx, value)
 	if err != nil {
 		resp.Code = http.StatusBadRequest
 		resp.Msg = "查询失败"
@@ -242,4 +254,19 @@ func (U *UseService) Profile(ctx *gin.Context) {
 	resp.Responses(ctx)
 	return
 
+}
+
+func openSession(ctx *gin.Context, val string, response *http2.Response) {
+	session := sessions.Default(ctx)
+	session.Options(sessions.Options{
+		MaxAge: 900,
+	})
+	session.Set(middleware.SessionIDKeyName, val)
+	err := session.Save()
+	if err != nil {
+		response.Code = http.StatusInternalServerError
+		response.Msg = "系统错误，登录失败"
+		response.Responses(ctx)
+		return
+	}
 }
