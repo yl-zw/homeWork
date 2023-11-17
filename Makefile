@@ -12,5 +12,3 @@ docker:
 	@docker rm -f $(Name)
 	@docker run -d --name  $(Name)  $(Name):v1
 	@docker logs -f  $(Name)
- dockercompose:
-	@docker compose up
