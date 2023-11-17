@@ -9,3 +9,4 @@ docker:
 	@docker rmi -f webbook:v1
 	@docker build  -t webbook:v1 .
 	@docker run -d --name webbook webbook:v1
+	@docker logs -f webbook
