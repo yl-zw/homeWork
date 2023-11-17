@@ -12,5 +12,5 @@ docker:
 	@docker rm -f $(Name)
 	@docker run -d --name  $(Name)  $(Name):v1
 	@docker logs -f  $(Name)
-dockercopmse:D:\Go\HomeWork\webbook\docker-compose.yaml
+ dockercompose:
 	@docker compose up
