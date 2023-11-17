@@ -5,7 +5,7 @@ docker:
 	@git add .
 	@git commit -m "makefile"
 	@git push origin main
-	@git pull
+	@git pull remote main
 	@go build  webbook .
 	@docker rmi -f webbook:v1
 	@docker build  -t webbook:v1 .
