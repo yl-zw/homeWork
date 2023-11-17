@@ -1,5 +1,5 @@
 FROM centos
 COPY webbook /
 COPY config/config.yaml /config/
-NetWork webbook_default
+EXPOSE 8080/http
 CMD  ./webbook

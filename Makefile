@@ -10,7 +10,7 @@ docker:
 	@docker rmi -f  $(Name):v1
 	@docker build  -t  $(Name):v1 .
 	@docker rm -f $(Name)
-	@docker run -d --name  $(Name)  $(Name):v1
+	@docker run -d --name  $(Name) -network=webbook_default $(Name):v1
 	@docker logs -f  $(Name)
 build:
 	@docker compose up -d
