@@ -1,7 +1,7 @@
 DB:
   username: root
   password: root
-  address: 127.0.0.1
+  address: 0.0.0.0
   port: 3306
   dbName: webbook
 
