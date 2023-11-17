@@ -31,7 +31,7 @@ var (
 )
 
 func NewUserDao(db *gorm.DB) *UseDao {
-	db = db.Debug()
+	//db = db.Debug()
 	return &UseDao{db: db}
 }
 func (u *UseDao) Insert(ctx context.Context, user User) error {

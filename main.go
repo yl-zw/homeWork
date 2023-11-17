@@ -11,9 +11,12 @@ import (
 	service2 "webbook/internal/service"
 	"webbook/internal/web"
 	"webbook/internal/web/middleware"
+	"webbook/limiter"
 )
 
 func main() {
+	limit := limiter.NewLimit(1, 50)
+	middleware.Limiters = limit
 	err := dao.InitTables()
 	if err != nil {
 		fmt.Println(err)

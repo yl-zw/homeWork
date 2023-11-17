@@ -10,9 +10,12 @@ import (
 	"net/http"
 	"time"
 	http2 "webbook/http"
+	"webbook/limiter"
 )
 
 const SessionIDKeyName = "userId"
+
+var Limiters *limiter.Limiter
 
 func Cors() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -36,6 +39,15 @@ func CheckLogin() gin.HandlerFunc {
 		//sessionCheck(ctx) //通过session身份验证
 		tokenCheck(ctx) //通过token身份验证
 
+	}
+}
+
+func LimiterMiddle() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		//fmt.Println(len(Limiters.Pool))
+		if Limiters.IsLimit(ctx, time.Now().UnixNano()) {
+			ctx.AbortWithStatus(http.StatusTooManyRequests)
+		}
 	}
 }
 func Init(engine *gin.Engine) {
