@@ -1,12 +1,14 @@
 .PHONY:docker
+Name=webbook
 docker:
 	@rm -f webbook|| true
 	@go mod tidy
 	@git add .
 	@git commit -m "makefile"
 	@git push origin main
-	@go build  webbook .
-	@docker rmi -f webbook:v1
-	@docker build  -t webbook:v1 .
-	@docker run -d --name webbook webbook:v1
-	@docker logs -f webbook
+	@go build  $(Name) .
+	@docker rmi -f  $(Name):v1
+	@docker build  -t  $(Name):v1 .
+	@docker rm -f $(Name)
+	@docker run -d --name  $(Name)  $(Name):v1
+	@docker logs -f  $(Name)
