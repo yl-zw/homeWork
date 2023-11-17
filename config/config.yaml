@@ -1,7 +1,7 @@
 DB:
   username: root
   password: root
-  address: 0.0.0.0
+  address: mysql
   port: 3306
   dbName: webbook
 
