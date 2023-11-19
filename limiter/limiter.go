@@ -63,6 +63,7 @@ func (l *Limiter) IsLimit(ctx *gin.Context, now int64) bool {
 	} else {
 		l.Pool[ip] = info{
 			last: now + l.rate*1000000000,
+			num:  l.num + 1,
 		}
 	}
 	return false
