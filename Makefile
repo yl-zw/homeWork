@@ -1,10 +1,11 @@
 
 Name=webbook
-docker:
+build:
 	@rm -f webbook|| true
 	@go mod tidy
 	@git add .
 	@git commit -m "makefile"
+	@git pull
 	@git push origin main
 	@go build  $(Name) .
 	@docker rmi -f  $(Name):v1
