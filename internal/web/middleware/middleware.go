@@ -117,7 +117,7 @@ func tokenCheck(ctx *gin.Context) {
 	}
 	if expirationTime.Sub(time.Now()) > time.Second*10 {
 		ug.ExpiresAt = jwt.NewNumericDate(time.Now())
-		newtoken, err := token.SignedString(JWTkey)
+		newtoken, err := token.SignedString([]byte(JWTkey))
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -192,9 +192,14 @@ func (U *UseService) Edit(ctx *gin.Context) {
 		respon.Responses(ctx)
 		return
 	}
-	email := sessions.Default(ctx).Get(middleware.SessionIDKeyName)
+	//email := sessions.Default(ctx).Get(middleware.SessionIDKeyName)
+	value, exists := ctx.Get("email")
+	if !exists {
+		fmt.Println("未拿到数据")
+		return
+	}
 	var req domain.Profile
-	req.Email = email.(string)
+	req.Email = value.(string)
 	req.Birthday = info.BirthDay
 	req.UserName = info.UserName
 	req.PersonalProfile = info.PersonProfile
@@ -243,6 +248,7 @@ func (U *UseService) Profile(ctx *gin.Context) {
 	}
 	info, err := U.repo.GetProfileInfo(ctx, value)
 	if err != nil {
+		fmt.Println(err)
 		resp.Code = http.StatusBadRequest
 		resp.Msg = "查询失败"
 		resp.Responses(ctx)

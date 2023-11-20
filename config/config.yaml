@@ -1,7 +1,13 @@
 DB:
-  username: root
-  password: root
-  address: 127.0.0.1
-  port: 3306
-  dbName: webbook
+  mysql:
+    username: root
+    password: root
+    address: 127.0.0.1
+    port: 3306
+    dbName: webbook
+  redis:
+    address: 127.0.0.1
+    port: 6379
+    password:
+    dbName: 0
 

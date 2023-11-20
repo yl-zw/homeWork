@@ -7,41 +7,47 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"time"
 	"webbook/internal/domain"
+	"webbook/internal/respository/cache"
 	"webbook/internal/respository/dao/user"
 )
 
 type UserRepository struct {
-	dao *user.UseDao
+	dao   *user.UseDao
+	cache *cache.UserCache
 }
 
 var (
 	ErrUserEmailErr    = user.EmailError
 	ErrEmailOrPassword = user.RecodNotFound
+	RedisErr           = cache.KeyIsNotExist
 )
 
-func NewUserRepository(useDao *user.UseDao) *UserRepository {
-	return &UserRepository{dao: useDao}
+func NewUserRepository(useDao *user.UseDao, userCache *cache.UserCache) *UserRepository {
+	return &UserRepository{
+		dao:   useDao,
+		cache: userCache,
+	}
 }
-func (r *UserRepository) Create(ctx context.Context, u *domain.User) error {
-	generateFromPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+func (u *UserRepository) Create(ctx context.Context, in *domain.User) error {
+	generateFromPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	return r.dao.Insert(ctx, user.User{
-		Email:    u.Email,
+	return u.dao.Insert(ctx, user.User{
+		Email:    in.Email,
 		Password: string(generateFromPassword),
 	})
 }
 
-func (r *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser) (string, error) {
+func (u *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser) (string, error) {
 	var user = &domain.User{}
-	uinfo, err := r.dao.GetUserInfoByEmail(ctx, req)
+	uinfo, err := u.dao.GetUserInfoByEmail(ctx, req)
 	if err != nil {
 		return "", err
 	}
 
-	r.ToDomain(&uinfo, user)
+	u.ToDomain(&uinfo, user)
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
@@ -55,15 +61,27 @@ func (r *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser)
 func (u *UserRepository) GetProfileInfo(ctx *gin.Context, email interface{}) (domain.Profile, error) {
 	var res domain.Profile
 	tem := email.(string)
+	res, err := u.cache.Get(tem)
+	if err != nil {
+		if err != RedisErr {
+			return res, err
+		}
+		fmt.Println(err)
+	}
 	info, err := u.dao.GetProfileInfo(ctx, tem)
 	if err != nil {
 		return res, err
 	}
+
 	res.Email = info.Email
 	format := time.Unix(info.Birthday, 0).Format("2006-01-02")
 	res.Birthday = format
 	res.PersonalProfile = info.Personalprofile
 	res.UserName = info.Username
+	err = u.cache.Set(tem, res)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return res, nil
 }
 
@@ -92,7 +110,7 @@ func (u *UserRepository) UpdateProfile(ctx *gin.Context, req *domain.Profile) er
 	return u.dao.UpdateProfile(ctx, updata)
 }
 
-func (r *UserRepository) ToDomain(user *user.User, user2 *domain.User) {
+func (u *UserRepository) ToDomain(user *user.User, user2 *domain.User) {
 	user2.ID = int(user.Id)
 	user2.Email = user.Email
 	user2.Password = user.Password

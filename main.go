@@ -6,6 +6,7 @@ import (
 	"webbook/config"
 	_ "webbook/config"
 	"webbook/internal/respository"
+	"webbook/internal/respository/cache"
 	"webbook/internal/respository/dao"
 	"webbook/internal/respository/dao/user"
 	service2 "webbook/internal/service"
@@ -22,14 +23,14 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	db, err := config.NewDb()
+	db, red, err := config.NewDb()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	userDao := user.NewUserDao(db)
-	userRepository := respository.NewUserRepository(userDao)
+	userCache := cache.NewUserCache(red)
+	userRepository := respository.NewUserRepository(userDao, userCache)
 	useService := service2.NewUseService(userRepository)
 	router := web.New(useService)
 	service := gin.Default()
