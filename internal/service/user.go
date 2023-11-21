@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dlclark/regexp2"
@@ -22,23 +23,26 @@ const (
 )
 
 type UseService struct {
-	email    *regexp2.Regexp
-	password *regexp2.Regexp
-	birthDay *regexp2.Regexp
-	repo     *respository.UserRepository
+	email       *regexp2.Regexp
+	password    *regexp2.Regexp
+	birthDay    *regexp2.Regexp
+	repo        *respository.UserRepository
+	codeService *CodeService
 }
 
 var (
 	ErrEmail                 = respository.ErrUserEmailErr
 	ErrEmailOrPaawordIsWrong = respository.ErrEmailOrPassword
+	RedisErr                 = respository.RedisErr
 )
 
-func NewUseService(repository *respository.UserRepository) *UseService {
+func NewUseService(repository *respository.UserRepository, code *CodeService) *UseService {
 	return &UseService{
-		email:    regexp2.MustCompile(email, regexp2.None),
-		password: regexp2.MustCompile(password, regexp2.None),
-		birthDay: regexp2.MustCompile(birthDay, regexp2.None),
-		repo:     repository,
+		email:       regexp2.MustCompile(email, regexp2.None),
+		password:    regexp2.MustCompile(password, regexp2.None),
+		birthDay:    regexp2.MustCompile(birthDay, regexp2.None),
+		repo:        repository,
+		codeService: code,
 	}
 }
 func (U *UseService) SignUp(ctx *gin.Context) {
@@ -92,6 +96,35 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 	var user = &domain.User{}
 	user.Email = reqUser.Email
 	user.Password = reqUser.Password
+	user.Phone = reqUser.Phone
+	err = U.codeService.SendCode(user.Phone, user)
+	if err != nil {
+		res.Code = http.StatusInternalServerError
+		res.Msg = "系统错误"
+		res.Responses(ctx)
+		return
+	}
+	err = U.repo.SetKey("regist", reqUser.Phone, 123)
+	if err != nil {
+		fmt.Println(err)
+		res.Code = http.StatusInternalServerError
+		res.Msg = "系统错误"
+		res.Responses(ctx)
+		return
+	}
+	err = U.repo.SetKey("registinfo", reqUser.Phone, user)
+	if err != nil {
+		fmt.Println(err)
+		res.Code = http.StatusInternalServerError
+		res.Msg = "系统错误"
+		res.Responses(ctx)
+		return
+	}
+	res.Code = http.StatusOK
+	res.Msg = "请输入验证码"
+	res.Responses(ctx)
+	return
+
 	err = U.repo.Create(ctx, user)
 	if errors.Is(err, ErrEmail) {
 		res.Code = http.StatusBadRequest
@@ -133,6 +166,7 @@ func (U *UseService) Login(ctx *gin.Context) {
 	//openSession(ctx, userEmail, res) //开启session
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
 		UserEmail: userEmail,
+		UserAgent: ctx.GetHeader("User-Agent"),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
 		},
@@ -260,6 +294,68 @@ func (U *UseService) Profile(ctx *gin.Context) {
 	resp.Responses(ctx)
 	return
 
+}
+
+func (U *UseService) Send(ctx *gin.Context) {
+	type req struct {
+		Biz   string `json:"biz"`
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+
+	respon := &http2.Response{}
+	var reqs = req{}
+	if ctx.Bind(&reqs) != nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "参数错误"
+		respon.Responses(ctx)
+		return
+	}
+	err, result := U.codeService.GetCode(reqs.Biz, reqs.Phone)
+	if err != nil && err != RedisErr {
+		respon.Code = http.StatusInternalServerError
+		respon.Msg = "系统错误"
+		respon.Responses(ctx)
+		return
+	}
+	if result == nil {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "验证码过期"
+		respon.Responses(ctx)
+		return
+	}
+	if reqs.Code != result.(string) {
+		respon.Code = http.StatusBadRequest
+		respon.Msg = "验证码错误"
+		respon.Responses(ctx)
+		return
+	}
+	err, info := U.codeService.GetCode(fmt.Sprintf("%sinfo", reqs.Biz), reqs.Phone)
+	if err != nil {
+		fmt.Println(err)
+		respon.Code = http.StatusInternalServerError
+		respon.Msg = "系统错误"
+		respon.Responses(ctx)
+		return
+	}
+	tt := info.(string)
+	rr := domain.User{}
+	if json.Unmarshal([]byte(tt), &rr) != nil {
+		fmt.Println(json.Unmarshal([]byte(tt), &rr))
+		return
+	}
+	err = U.repo.Create(ctx, &rr)
+	if err != nil {
+		fmt.Println(err)
+		respon.Code = http.StatusInternalServerError
+		respon.Msg = "系统错误"
+		respon.Responses(ctx)
+		return
+	}
+	respon.Code = http.StatusOK
+	respon.Msg = "注册成功"
+	respon.Responses(ctx)
+	return
 }
 
 func openSession(ctx *gin.Context, val string, response *http2.Response) {

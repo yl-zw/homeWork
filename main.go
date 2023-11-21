@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"webbook/ailiyunmsm/msm"
 	"webbook/config"
 	_ "webbook/config"
 	"webbook/internal/respository"
@@ -31,7 +32,14 @@ func main() {
 	userDao := user.NewUserDao(db)
 	userCache := cache.NewUserCache(red)
 	userRepository := respository.NewUserRepository(userDao, userCache)
-	useService := service2.NewUseService(userRepository)
+	clientMSM, err := msm.NewClientMSM("LTAI5tFRxfde7aSz8zVtWG89", "f9GZyo5sV3mmuQv51TBDrMkLMOSpMo")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	code := service2.NewCode(clientMSM, userCache)
+
+	useService := service2.NewUseService(userRepository, code)
 	router := web.New(useService)
 	service := gin.Default()
 	middleware.Init(service)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"time"
-	"webbook/internal/domain"
 )
 
 type UserCache struct {
@@ -22,7 +21,7 @@ func NewUserCache(cmd redis.Cmdable) *UserCache {
 	}
 }
 
-func (u *UserCache) Set(uid string, user domain.Profile) error {
+func (u *UserCache) Set(uid string, user interface{}) error {
 	res, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -30,18 +29,17 @@ func (u *UserCache) Set(uid string, user domain.Profile) error {
 	return u.cmd.Set(u.key(uid), res, u.Expiration).Err()
 }
 
-func (u *UserCache) Get(uid string) (domain.Profile, error) {
+func (u *UserCache) Get(uid string) (interface{}, error) {
 	key := u.key(uid)
 	result, err := u.cmd.Get(key).Result()
 	if err != nil {
-		return domain.Profile{}, err
+		return nil, err
 	}
-	res := domain.Profile{}
-	err = json.Unmarshal([]byte(result), &res)
+
 	if err != nil {
-		return domain.Profile{}, err
+		return result, err
 	}
-	return res, nil
+	return result, nil
 
 }
 func (u *UserCache) key(uid string) string {

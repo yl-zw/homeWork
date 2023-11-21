@@ -23,6 +23,7 @@ func (S *ServiceHandel) RegisterRoute(service *gin.Engine) {
 		user.POST("/signup", S.UserService.SignUp)
 		user.POST("/edit", S.UserService.Edit)
 		user.GET("/profile", S.UserService.Profile)
+		user.POST("/send", S.UserService.Send)
 	}
 
 }

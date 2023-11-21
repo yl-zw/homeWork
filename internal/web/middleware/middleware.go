@@ -20,7 +20,7 @@ var Limiters *limiter.Limiter
 func Cors() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		cors.New(cors.Config{
-			AllowedHeaders:   []string{"Content-type", "Auth"},
+			AllowedHeaders:   []string{"Content-type", "Auth", "User-Agent"},
 			ExposedHeaders:   []string{"jwt-token"},
 			AllowCredentials: true,
 			AllowOriginFunc: func(origin string) bool {
@@ -33,7 +33,7 @@ func Cors() gin.HandlerFunc {
 func CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		url := ctx.Request.URL
-		if url.Path == "/user/signup" || url.Path == "/user/login" {
+		if url.Path == "/user/signup" || url.Path == "/user/login" || url.Path == "/user/send" {
 			return
 		}
 		//sessionCheck(ctx) //通过session身份验证
@@ -115,6 +115,9 @@ func tokenCheck(ctx *gin.Context) {
 		fmt.Println(err)
 		return
 	}
+	if ug.UserAgent != ug.UserAgent {
+		ctx.AbortWithStatus(http.StatusBadRequest)
+	}
 	if expirationTime.Sub(time.Now()) > time.Second*10 {
 		ug.ExpiresAt = jwt.NewNumericDate(time.Now())
 		newtoken, err := token.SignedString([]byte(JWTkey))
@@ -128,6 +131,7 @@ func tokenCheck(ctx *gin.Context) {
 type UserClaim struct {
 	jwt.RegisteredClaims
 	UserEmail string
+	UserAgent string
 }
 
 var JWTkey = `vGUssghAQBrc6B887vPDQfBjdNhe2hh4`

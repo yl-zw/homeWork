@@ -15,8 +15,9 @@ type Config struct {
 	DB *DbConfig `yaml:"DB"`
 }
 type DbConfig struct {
-	Mysql *MysqlConfig `yaml:"mysql"`
-	Redis *Redis       `yaml:"redis"`
+	Mysql  *MysqlConfig `yaml:"mysql"`
+	Redis  *Redis       `yaml:"redis"`
+	ALiYun *AliYun      `yaml:"ALiYun"`
 }
 type MysqlConfig struct {
 	Username string `yaml:"username"`
@@ -30,6 +31,10 @@ type Redis struct {
 	Port     string `yaml:"port"`
 	Address  string `yaml:"address"`
 	DbName   int    `yaml:"dbName"`
+}
+type AliYun struct {
+	KeyID  string `yaml:"key_id"`
+	Secret string `yaml:"secret"`
 }
 
 func (d *DbConfig) Dns(flag bool) string {

@@ -12,6 +12,7 @@ import (
 type User struct {
 	Id       int64  `gorm:"primaryKey,autoIncrement"`
 	Email    string `gorm:"unique"`
+	Phone    string `gorm:"unique"`
 	Password string
 	Ctime    int64
 	Utime    int64
@@ -49,9 +50,9 @@ func (u *UseDao) Insert(ctx context.Context, user User) error {
 	return nil
 }
 
-func (u *UseDao) GetUserInfoByEmail(ctx *gin.Context, req *domain.ReqLoginUser) (User, error) {
+func (u *UseDao) GetUserInfoByEmailORPhone(ctx *gin.Context, req *domain.ReqLoginUser) (User, error) {
 	var info User
-	err := u.db.Model(&info).Where("email= ?", req.Email).First(&info).Error
+	err := u.db.Model(&info).Where("email= ? or phone= ?", req.Email, req.Phone).First(&info).Error
 	if err == gorm.ErrRecordNotFound {
 		return User{}, RecodNotFound
 	}

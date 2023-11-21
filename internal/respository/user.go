@@ -42,7 +42,7 @@ func (u *UserRepository) Create(ctx context.Context, in *domain.User) error {
 
 func (u *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser) (string, error) {
 	var user = &domain.User{}
-	uinfo, err := u.dao.GetUserInfoByEmail(ctx, req)
+	uinfo, err := u.dao.GetUserInfoByEmailORPhone(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -59,30 +59,30 @@ func (u *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser)
 }
 
 func (u *UserRepository) GetProfileInfo(ctx *gin.Context, email interface{}) (domain.Profile, error) {
-	var res domain.Profile
 	tem := email.(string)
 	res, err := u.cache.Get(tem)
 	if err != nil {
 		if err != RedisErr {
-			return res, err
+			return domain.Profile{}, err
 		}
 		fmt.Println(err)
 	}
+	tt := res.(domain.Profile)
 	info, err := u.dao.GetProfileInfo(ctx, tem)
 	if err != nil {
-		return res, err
+		return tt, err
 	}
 
-	res.Email = info.Email
+	tt.Email = info.Email
 	format := time.Unix(info.Birthday, 0).Format("2006-01-02")
-	res.Birthday = format
-	res.PersonalProfile = info.Personalprofile
-	res.UserName = info.Username
+	tt.Birthday = format
+	tt.PersonalProfile = info.Personalprofile
+	tt.UserName = info.Username
 	err = u.cache.Set(tem, res)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return res, nil
+	return tt, nil
 }
 
 func (u *UserRepository) CreateProfile(ctx *gin.Context, profile *domain.Profile) error {
@@ -114,4 +114,11 @@ func (u *UserRepository) ToDomain(user *user.User, user2 *domain.User) {
 	user2.ID = int(user.Id)
 	user2.Email = user.Email
 	user2.Password = user.Password
+}
+
+func (u *UserRepository) SetKey(biz, phone string, data interface{}) error {
+	return u.cache.Set(key(biz, phone), data)
+}
+func key(biz string, phone string) string {
+	return fmt.Sprintf("user-%s-%s", biz, phone)
 }
