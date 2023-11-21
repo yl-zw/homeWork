@@ -32,7 +32,7 @@ func main() {
 	userDao := user.NewUserDao(db)
 	userCache := cache.NewUserCache(red)
 	userRepository := respository.NewUserRepository(userDao, userCache)
-	clientMSM, err := msm.NewClientMSM("LTAI5tFRxfde7aSz8zVtWG89", "f9GZyo5sV3mmuQv51TBDrMkLMOSpMo")
+	clientMSM, err := msm.NewClientMSM("", "")
 	if err != nil {
 		fmt.Println(err)
 		return
