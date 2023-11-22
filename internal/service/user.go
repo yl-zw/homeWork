@@ -97,29 +97,29 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 	user.Email = reqUser.Email
 	user.Password = reqUser.Password
 	user.Phone = reqUser.Phone
-	err = U.codeService.SendCode(user.Phone, user)
+	err = U.codeService.SendCode("regist", user, user.Phone)
 	if err != nil {
 		res.Code = http.StatusInternalServerError
 		res.Msg = "系统错误"
 		res.Responses(ctx)
 		return
 	}
-	err = U.repo.SetKey("regist", reqUser.Phone, 123)
-	if err != nil {
-		fmt.Println(err)
-		res.Code = http.StatusInternalServerError
-		res.Msg = "系统错误"
-		res.Responses(ctx)
-		return
-	}
-	err = U.repo.SetKey("registinfo", reqUser.Phone, user)
-	if err != nil {
-		fmt.Println(err)
-		res.Code = http.StatusInternalServerError
-		res.Msg = "系统错误"
-		res.Responses(ctx)
-		return
-	}
+	//err = U.repo.SetKey("regist", reqUser.Phone, 123)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	res.Code = http.StatusInternalServerError
+	//	res.Msg = "系统错误"
+	//	res.Responses(ctx)
+	//	return
+	//}
+	//err = U.repo.SetKey("registinfo", reqUser.Phone, user)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	res.Code = http.StatusInternalServerError
+	//	res.Msg = "系统错误"
+	//	res.Responses(ctx)
+	//	return
+	//}
 	res.Code = http.StatusOK
 	res.Msg = "请输入验证码"
 	res.Responses(ctx)

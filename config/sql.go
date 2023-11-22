@@ -1,4 +1,4 @@
-package dao
+package config
 
 var databases = `create database if not exists webbook default charset =utf8mb4;`
 var initSqlUser = `CREATE TABLE IF NOT EXISTS webbook.users(

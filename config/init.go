@@ -1,9 +1,8 @@
-package dao
+package config
 
 import (
 	"database/sql"
 	"fmt"
-	"webbook/config"
 )
 
 func InitTables() error {
@@ -15,7 +14,7 @@ func InitTables() error {
 	//if err != nil {
 	//	return err
 	//}
-	conn, err := sql.Open("mysql", config.Con.DB.Dns(true))
+	conn, err := sql.Open("mysql", Con.DB.Dns(true))
 	if err != nil {
 		return err
 	}

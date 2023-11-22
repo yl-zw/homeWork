@@ -44,6 +44,7 @@ func (c *ALiMessageClient) Send(singerName string, code string, iphoneNums ...st
 			fmt.Println(result)
 			return errors.New("系统错误")
 		}
+		fmt.Println(result.Body)
 
 	}
 

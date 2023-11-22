@@ -17,6 +17,10 @@ const SessionIDKeyName = "userId"
 
 var Limiters *limiter.Limiter
 
+func InitMiddle() {
+	Limiters = limiter.NewLimit(1, 50)
+}
+
 func Cors() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		cors.New(cors.Config{
@@ -50,9 +54,10 @@ func LimiterMiddle() gin.HandlerFunc {
 		}
 	}
 }
-func Init(engine *gin.Engine) {
-	//initSession(engine)
-}
+
+//func Init(engine *gin.Engine) {
+//	//initSession(engine)
+//}
 
 const updateTime = "updateTime"
 

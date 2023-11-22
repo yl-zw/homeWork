@@ -45,7 +45,7 @@ func (d *DbConfig) Dns(flag bool) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", d.Mysql.Username, d.Mysql.Password, d.Mysql.Address, d.Mysql.Port, d.Mysql.DbName)
 }
 
-func init() {
+func InitConfig(configPath string) {
 	file, err := os.Open("./config/config.yaml")
 	if err != nil {
 		fmt.Println(err)

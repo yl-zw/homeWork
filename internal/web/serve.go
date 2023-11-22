@@ -13,7 +13,7 @@ type ServiceHandel struct {
 func New(useService *service.UseService) *ServiceHandel {
 	return &ServiceHandel{UserService: useService}
 }
-func (S *ServiceHandel) RegisterRoute(service *gin.Engine) {
+func RegisterRoute(service *gin.Engine, S *ServiceHandel) {
 	// 使用中间件解决跨域问题
 	service.Use(middleware.LimiterMiddle(), middleware.Cors(), middleware.CheckLogin())
 

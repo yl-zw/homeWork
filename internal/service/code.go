@@ -20,7 +20,7 @@ func NewCode(client *msm.ALiMessageClient, user *cache.UserCache) *CodeService {
 }
 
 func (c *CodeService) SendCode(biz string, data interface{}, phone ...string) error {
-	err := c.msmClient.Send("zw", code(), phone...)
+	err := c.msmClient.Send("张巍的博客", code(), phone...)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -30,11 +30,15 @@ func (c *CodeService) SendCode(biz string, data interface{}, phone ...string) er
 		if err != nil {
 			fmt.Println(err)
 		}
+		err = c.user.Set(key(biz, v, "info"), data)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	return nil
 }
-func key(biz string, phone string) string {
-	return fmt.Sprintf("user-%s-%s", biz, phone)
+func key(biz string, phone string, other ...string) string {
+	return fmt.Sprintf("user-%s-%s%s", biz, phone, other)
 }
 func code() string {
 	intn := rand.Intn(100000)
