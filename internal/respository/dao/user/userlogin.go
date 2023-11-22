@@ -22,6 +22,13 @@ func (u *User) GetTableName() string {
 	return "users"
 }
 
+type Dao interface {
+	Insert(ctx context.Context, user User) error
+	GetUserInfoByEmailORPhone(ctx *gin.Context, req *domain.ReqLoginUser) (User, error)
+	GetProfileInfo(ctx *gin.Context, email string) (Profile, error)
+	InsertProfile(ctx context.Context, user *Profile) error
+	UpdateProfile(ctx *gin.Context, updata Profile) error
+}
 type UseDao struct {
 	db *gorm.DB
 }

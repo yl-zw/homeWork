@@ -4,8 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
+	"strconv"
 	"time"
 )
+
+type Cache interface {
+	Set(uid string, user interface{}) error
+	Get(uid string) (interface{}, error)
+	DelKey(key string) error
+}
 
 type UserCache struct {
 	cmd        redis.Cmdable
@@ -26,22 +33,24 @@ func (u *UserCache) Set(uid string, user interface{}) error {
 	if err != nil {
 		return err
 	}
-	return u.cmd.Set(u.key(uid), res, u.Expiration).Err()
+	return u.cmd.Set(uid, res, u.Expiration).Err()
 }
 
 func (u *UserCache) Get(uid string) (interface{}, error) {
-	key := u.key(uid)
-	result, err := u.cmd.Get(key).Result()
-	if err != nil {
-		return nil, err
-	}
-
+	fmt.Println(uid)
+	result, err := u.cmd.Get(uid).Result()
 	if err != nil {
 		return result, err
 	}
-	return result, nil
+	unquote, err := strconv.Unquote(result)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return unquote, nil
 
 }
-func (u *UserCache) key(uid string) string {
-	return fmt.Sprintf("user-info-%s", uid)
+func (u *UserCache) DelKey(key string) error {
+
+	return u.cmd.Del(key).Err()
 }

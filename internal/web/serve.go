@@ -7,10 +7,10 @@ import (
 )
 
 type ServiceHandel struct {
-	UserService *service.UseService
+	UserService service.UserSer
 }
 
-func New(useService *service.UseService) *ServiceHandel {
+func New(useService service.UserSer) *ServiceHandel {
 	return &ServiceHandel{UserService: useService}
 }
 func RegisterRoute(service *gin.Engine, S *ServiceHandel) {

@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+
 	//err := dao.InitTables()
 	//if err != nil {
 	//	fmt.Println(err)

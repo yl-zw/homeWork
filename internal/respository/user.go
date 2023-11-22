@@ -11,9 +11,18 @@ import (
 	"webbook/internal/respository/dao/user"
 )
 
+type Repository interface {
+	Create(ctx context.Context, in *domain.User) error
+	GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser) (string, error)
+	GetProfileInfo(ctx *gin.Context, email interface{}) (domain.Profile, error)
+	CreateProfile(ctx *gin.Context, profile *domain.Profile) error
+	UpdateProfile(ctx *gin.Context, req *domain.Profile) error
+	ToDomain(user *user.User, user2 *domain.User)
+	SetKey(biz, phone string, data interface{}) error
+}
 type UserRepository struct {
-	dao   *user.UseDao
-	cache *cache.UserCache
+	dao   user.Dao
+	cache cache.Cache
 }
 
 var (
@@ -22,7 +31,7 @@ var (
 	RedisErr           = cache.KeyIsNotExist
 )
 
-func NewUserRepository(useDao *user.UseDao, userCache *cache.UserCache) *UserRepository {
+func NewUserRepository(useDao user.Dao, userCache cache.Cache) *UserRepository {
 	return &UserRepository{
 		dao:   useDao,
 		cache: userCache,

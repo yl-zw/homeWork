@@ -22,12 +22,19 @@ const (
 	birthDay = `^d{4}-d{2}-d{2}$`
 )
 
+type UserSer interface {
+	SignUp(ctx *gin.Context)
+	Login(ctx *gin.Context)
+	Edit(ctx *gin.Context)
+	Profile(ctx *gin.Context)
+	Send(ctx *gin.Context)
+}
 type UseService struct {
 	email       *regexp2.Regexp
 	password    *regexp2.Regexp
 	birthDay    *regexp2.Regexp
-	repo        *respository.UserRepository
-	codeService *CodeService
+	repo        respository.Repository
+	codeService CodeS
 }
 
 var (
@@ -36,7 +43,7 @@ var (
 	RedisErr                 = respository.RedisErr
 )
 
-func NewUseService(repository *respository.UserRepository, code *CodeService) *UseService {
+func NewUseService(repository respository.Repository, code CodeS) *UseService {
 	return &UseService{
 		email:       regexp2.MustCompile(email, regexp2.None),
 		password:    regexp2.MustCompile(password, regexp2.None),
@@ -324,19 +331,26 @@ func (U *UseService) Send(ctx *gin.Context) {
 		respon.Responses(ctx)
 		return
 	}
-	if reqs.Code != result.(string) {
+
+	if reqs.Code != result {
 		respon.Code = http.StatusBadRequest
 		respon.Msg = "验证码错误"
 		respon.Responses(ctx)
 		return
 	}
-	err, info := U.codeService.GetCode(fmt.Sprintf("%sinfo", reqs.Biz), reqs.Phone)
+	err = U.codeService.DelKeyByName(reqs.Biz, reqs.Phone)
+	fmt.Println(err)
+	err, info := U.codeService.GetCode(reqs.Biz, reqs.Phone, "info")
 	if err != nil {
 		fmt.Println(err)
 		respon.Code = http.StatusInternalServerError
 		respon.Msg = "系统错误"
 		respon.Responses(ctx)
 		return
+	}
+	err = U.codeService.DelKeyByName(reqs.Biz, reqs.Phone, "info")
+	if err != nil {
+		fmt.Println(err)
 	}
 	tt := info.(string)
 	rr := domain.User{}
