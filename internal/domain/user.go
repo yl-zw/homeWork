@@ -1,5 +1,7 @@
 package domain
 
+import "encoding/json"
+
 type ReqSingUpUser struct {
 	Email           string `json:"email"`
 	Password        string `json:"password"`
@@ -18,6 +20,11 @@ type User struct {
 	Password string `json:"password"`
 	Phone    string `json:"phone"`
 }
+
+func (u *User) MarshalBinary() ([]byte, error) {
+	return json.Marshal(u)
+}
+
 type Profile struct {
 	Email           string `json:"email"`
 	UserName        string `json:"userName"`

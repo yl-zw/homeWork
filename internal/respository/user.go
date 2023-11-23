@@ -45,6 +45,7 @@ func (u *UserRepository) Create(ctx context.Context, in *domain.User) error {
 
 	return u.dao.Insert(ctx, user.User{
 		Email:    in.Email,
+		Phone:    in.Phone,
 		Password: string(generateFromPassword),
 	})
 }

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dlclark/regexp2"
@@ -132,23 +131,23 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 	res.Responses(ctx)
 	return
 
-	err = U.repo.Create(ctx, user)
-	if errors.Is(err, ErrEmail) {
-		res.Code = http.StatusBadRequest
-		res.Msg = "账号已注册"
-		res.Responses(ctx)
-		return
-	}
-	if err != nil {
-		res.Code = http.StatusNotExtended
-		res.Msg = "系统错误,注册失败"
-		res.Responses(ctx)
-		return
-	}
-	res.Code = http.StatusOK
-	res.Msg = "注册成功"
-	res.Responses(ctx)
-	return
+	//err = U.repo.Create(ctx, user)
+	//if errors.Is(err, ErrEmail) {
+	//	res.Code = http.StatusBadRequest
+	//	res.Msg = "账号已注册"
+	//	res.Responses(ctx)
+	//	return
+	//}
+	//if err != nil {
+	//	res.Code = http.StatusNotExtended
+	//	res.Msg = "系统错误,注册失败"
+	//	res.Responses(ctx)
+	//	return
+	//}
+	//res.Code = http.StatusOK
+	//res.Msg = "注册成功"
+	//res.Responses(ctx)
+	//return
 }
 func (U *UseService) Login(ctx *gin.Context) {
 	var req = &domain.ReqLoginUser{}
@@ -352,13 +351,13 @@ func (U *UseService) Send(ctx *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	tt := info.(string)
-	rr := domain.User{}
-	if json.Unmarshal([]byte(tt), &rr) != nil {
-		fmt.Println(json.Unmarshal([]byte(tt), &rr))
-		return
-	}
-	err = U.repo.Create(ctx, &rr)
+	tt := info.(*domain.User)
+	//rr := domain.User{}
+	//if json.Unmarshal([]byte(tt), &rr) != nil {
+	//	fmt.Println(json.Unmarshal([]byte(tt), &rr))
+	//	return
+	//}
+	err = U.repo.Create(ctx, tt)
 	if err != nil {
 		fmt.Println(err)
 		respon.Code = http.StatusInternalServerError

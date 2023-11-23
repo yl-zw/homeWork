@@ -27,12 +27,14 @@ func NewCode(client ailiyunmsm.Code, user cache.Cache) *CodeService {
 
 func (c *CodeService) SendCode(biz string, data interface{}, phone string) error {
 	codes := code()
-	err := c.msmClient.Send("张巍的博客", codes, phone)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	err = c.user.Set(key(biz, phone), codes)
+	fmt.Println(codes)
+	//err := c.msmClient.Send("张巍的博客", codes, phone)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return err
+	//}
+	fmt.Println(codes)
+	err := c.user.Set(key(biz, phone), codes)
 	if err != nil {
 		fmt.Println(err)
 	}
