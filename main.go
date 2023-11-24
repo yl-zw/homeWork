@@ -32,7 +32,6 @@ func main() {
 	//service := gin.Default()
 	service := InitWebService()
 	//router.RegisterRoute(service)
-
 	err := service.Run("0.0.0.0:8080")
 	if err != nil {
 		fmt.Println(err)

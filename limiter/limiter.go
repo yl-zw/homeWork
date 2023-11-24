@@ -2,8 +2,6 @@ package limiter
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"strings"
 	"sync"
 	"time"
 )
@@ -17,7 +15,6 @@ type Limiter struct {
 type info struct {
 	num  int64
 	last int64
-	max  int64
 }
 
 func NewLimit(rat int64, num int64) *Limiter {
@@ -38,8 +35,8 @@ func NewLimit(rat int64, num int64) *Limiter {
 	return lim
 }
 
-func (l *Limiter) IsLimit(ctx *gin.Context, now int64) bool {
-	ip := strings.Split(ctx.Request.RemoteAddr, ":")[0]
+func (l *Limiter) IsLimit(ip string) bool {
+	now := time.Now().UnixNano()
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if val, ok := l.Pool[ip]; ok {

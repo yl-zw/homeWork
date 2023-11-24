@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"strings"
 	"time"
 	http2 "webbook/http"
 	"webbook/limiter"
@@ -49,7 +50,8 @@ func CheckLogin() gin.HandlerFunc {
 func LimiterMiddle() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		//fmt.Println(len(Limiters.Pool))
-		if Limiters.IsLimit(ctx, time.Now().UnixNano()) {
+		ip := strings.Split(ctx.Request.RemoteAddr, ":")[0]
+		if Limiters.IsLimit(ip) {
 			ctx.AbortWithStatus(http.StatusTooManyRequests)
 		}
 	}
