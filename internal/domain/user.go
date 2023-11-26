@@ -31,3 +31,11 @@ type Profile struct {
 	Birthday        string `json:"birthday"`
 	PersonalProfile string `json:"personalProfile"`
 }
+
+func (u *Profile) MarshalBinary() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+func (u *Profile) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, u)
+}

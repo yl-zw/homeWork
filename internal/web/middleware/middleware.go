@@ -18,8 +18,10 @@ const SessionIDKeyName = "userId"
 
 var Limiters *limiter.Limiter
 
-func InitMiddle() {
+func InitMiddle(engine *gin.Engine) {
 	Limiters = limiter.NewLimit(1, 50)
+	initSession(engine)
+
 }
 
 func Cors() gin.HandlerFunc {
@@ -41,8 +43,8 @@ func CheckLogin() gin.HandlerFunc {
 		if url.Path == "/user/signup" || url.Path == "/user/login" || url.Path == "/user/send" {
 			return
 		}
-		//sessionCheck(ctx) //通过session身份验证
-		tokenCheck(ctx) //通过token身份验证
+		sessionCheck(ctx) //通过session身份验证
+		//tokenCheck(ctx) //通过token身份验证
 
 	}
 }
@@ -57,23 +59,20 @@ func LimiterMiddle() gin.HandlerFunc {
 	}
 }
 
-//func Init(engine *gin.Engine) {
-//	//initSession(engine)
-//}
-
 const updateTime = "updateTime"
 
 func initSession(engine *gin.Engine) {
-	store, err := sessions.NewRedisStore(10, "tcp", "192.168.3.108:6379", "", []byte("weefweif"))
+	store, err := sessions.NewRedisStore(10, "tcp", "127.0.0.1:6379", "", []byte("weefweif"))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	engine.Use(sessions.Sessions("ssid", store))
+	engine.Use(sessions.Sessions("sb", store))
 }
 func sessionCheck(ctx *gin.Context) {
 	gob.Register(time.Now())
 	val := sessions.Default(ctx).Get(SessionIDKeyName)
+	ctx.Set("email", val)
 	if val == nil {
 		var resp http2.Response
 		resp.Code = http.StatusNonAuthoritativeInfo
@@ -81,6 +80,7 @@ func sessionCheck(ctx *gin.Context) {
 		resp.Responses(ctx)
 		return
 	}
+	fmt.Println(ctx.Get("Expires"))
 	if sessions.Default(ctx).Get(updateTime) == nil {
 		sessions.Default(ctx).Set(updateTime, time.Now())
 		sessions.Default(ctx).Set(SessionIDKeyName, val)
@@ -89,7 +89,9 @@ func sessionCheck(ctx *gin.Context) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		return
 	}
+	fmt.Println(sessions.Default(ctx).Get(updateTime).(time.Time))
 	if time.Now().Sub(sessions.Default(ctx).Get(updateTime).(time.Time)) > time.Second*10 {
 		sessions.Default(ctx).Set(updateTime, time.Now())
 		sessions.Default(ctx).Set(SessionIDKeyName, val)

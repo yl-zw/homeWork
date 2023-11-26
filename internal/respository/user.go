@@ -14,7 +14,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, in *domain.User) error
 	GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser) (string, error)
-	GetProfileInfo(ctx *gin.Context, email interface{}) (domain.Profile, error)
+	GetProfileInfo(ctx *gin.Context, email interface{}) (*domain.Profile, error)
 	CreateProfile(ctx *gin.Context, profile *domain.Profile) error
 	UpdateProfile(ctx *gin.Context, req *domain.Profile) error
 	ToDomain(user *user.User, user2 *domain.User)
@@ -68,31 +68,38 @@ func (u *UserRepository) GetUserInfo(ctx *gin.Context, req *domain.ReqLoginUser)
 	return user.Email, nil
 }
 
-func (u *UserRepository) GetProfileInfo(ctx *gin.Context, email interface{}) (domain.Profile, error) {
+func (u *UserRepository) GetProfileInfo(ctx *gin.Context, email interface{}) (*domain.Profile, error) {
 	tem := email.(string)
+	var resp = &domain.Profile{}
 	res, err := u.cache.Get(tem)
 	if err != nil {
 		if err != RedisErr {
-			return domain.Profile{}, err
+			return nil, err
 		}
-		fmt.Println(err)
 	}
-	tt := res.(domain.Profile)
-	info, err := u.dao.GetProfileInfo(ctx, tem)
-	if err != nil {
-		return tt, err
+	if len(res) > 0 {
+		err = resp.UnmarshalBinary(res)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return resp, nil
 	}
 
-	tt.Email = info.Email
+	info, err := u.dao.GetProfileInfo(ctx, tem)
+	if err != nil {
+		return resp, err
+	}
+
+	resp.Email = info.Email
 	format := time.Unix(info.Birthday, 0).Format("2006-01-02")
-	tt.Birthday = format
-	tt.PersonalProfile = info.Personalprofile
-	tt.UserName = info.Username
-	err = u.cache.Set(tem, res)
+	resp.Birthday = format
+	resp.PersonalProfile = info.Personalprofile
+	resp.UserName = info.Username
+	err = u.cache.Set(tem, resp)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return tt, nil
+	return resp, nil
 }
 
 func (u *UserRepository) CreateProfile(ctx *gin.Context, profile *domain.Profile) error {

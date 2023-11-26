@@ -8,7 +8,7 @@ import (
 
 type Cache interface {
 	Set(key string, value interface{}, expire ...time.Duration) error
-	Get(key string) (interface{}, error)
+	Get(key string) ([]byte, error)
 	DelKey(key string) error
 }
 
@@ -36,8 +36,8 @@ func (u *RedisCache) Set(uid string, user interface{}, expire ...time.Duration) 
 	return u.cmd.Set(uid, user, u.Expiration).Err()
 }
 
-func (u *RedisCache) Get(uid string) (interface{}, error) {
-	result, err := u.cmd.Get(uid).Result()
+func (u *RedisCache) Get(uid string) ([]byte, error) {
+	result, err := u.cmd.Get(uid).Bytes()
 	if err != nil {
 		return result, err
 	}

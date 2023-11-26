@@ -1,14 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dlclark/regexp2"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"time"
 	http2 "webbook/http"
 	"webbook/internal/domain"
 	"webbook/internal/respository"
@@ -169,23 +168,23 @@ func (U *UseService) Login(ctx *gin.Context) {
 		res.Responses(ctx)
 		return
 	}
-	//openSession(ctx, userEmail, res) //开启session
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
-		UserEmail: userEmail,
-		UserAgent: ctx.GetHeader("User-Agent"),
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
-		},
-	})
-	signedString, err := token.SignedString([]byte(middleware.JWTkey))
-	if err != nil {
-		fmt.Println(err)
-		res.Code = http.StatusInternalServerError
-		res.Msg = "系统错误"
-		res.Responses(ctx)
-		return
-	}
-	ctx.Header("jwt-token", signedString)
+	openSession(ctx, userEmail, res) //开启session
+	//token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
+	//	UserEmail: userEmail,
+	//	UserAgent: ctx.GetHeader("User-Agent"),
+	//	RegisteredClaims: jwt.RegisteredClaims{
+	//		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 10)),
+	//	},
+	//})
+	//signedString, err := token.SignedString([]byte(middleware.JWTkey))
+	//if err != nil {
+	//	fmt.Println(err)
+	//	res.Code = http.StatusInternalServerError
+	//	res.Msg = "系统错误"
+	//	res.Responses(ctx)
+	//	return
+	//}
+	//ctx.Header("jwt-token", signedString)
 
 	res.Code = http.StatusOK
 	res.Msg = "登录成功"
@@ -351,13 +350,12 @@ func (U *UseService) Send(ctx *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	tt := info.(*domain.User)
-	//rr := domain.User{}
-	//if json.Unmarshal([]byte(tt), &rr) != nil {
-	//	fmt.Println(json.Unmarshal([]byte(tt), &rr))
-	//	return
-	//}
-	err = U.repo.Create(ctx, tt)
+	res := info.(string)
+	tt := domain.User{}
+	if json.Unmarshal([]byte(res), &tt) != nil {
+		return
+	}
+	err = U.repo.Create(ctx, &tt)
 	if err != nil {
 		fmt.Println(err)
 		respon.Code = http.StatusInternalServerError
