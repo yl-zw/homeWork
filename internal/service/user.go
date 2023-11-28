@@ -7,6 +7,7 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	http2 "webbook/http"
 	"webbook/internal/domain"
@@ -33,6 +34,7 @@ type UseService struct {
 	birthDay    *regexp2.Regexp
 	repo        respository.Repository
 	codeService CodeS
+	logger      *zap.SugaredLogger
 }
 
 var (
@@ -41,20 +43,27 @@ var (
 	RedisErr                 = respository.RedisErr
 )
 
-func NewUseService(repository respository.Repository, code CodeS) *UseService {
+func NewUseService(repository respository.Repository, code CodeS, logger *zap.SugaredLogger) *UseService {
 	return &UseService{
 		email:       regexp2.MustCompile(email, regexp2.None),
 		password:    regexp2.MustCompile(password, regexp2.None),
 		birthDay:    regexp2.MustCompile(birthDay, regexp2.None),
 		repo:        repository,
 		codeService: code,
+		logger:      logger,
 	}
 }
 func (U *UseService) SignUp(ctx *gin.Context) {
 	var reqUser = &domain.ReqSingUpUser{}
 	var res = &http2.Response{}
-	if ctx.Bind(reqUser) != nil {
+	err := ctx.Bind(reqUser)
+	defer func() {
+		if err != nil {
+			U.logger.Infof("SignUp   Err:%s", err)
+		}
 
+	}()
+	if err != nil {
 		res.Code = http.StatusBadRequest
 		res.Msg = errors.New("不是json格式").Error()
 		res.Responses(ctx)
@@ -71,6 +80,7 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 		res.Code = http.StatusBadRequest
 		res.Msg = errors.New("邮箱格式错误").Error()
 		res.Responses(ctx)
+		err = errors.New("邮箱格式错误")
 		return
 	}
 	isPassword, err := U.password.MatchString(reqUser.Password)
@@ -85,6 +95,7 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 		res.Code = http.StatusBadRequest
 		res.Msg = errors.New("密码格式错误").Error()
 		res.Responses(ctx)
+		err = errors.New("密码格式错误")
 		return
 	}
 	if reqUser.Password != reqUser.ConfirmPassword {
@@ -151,7 +162,14 @@ func (U *UseService) SignUp(ctx *gin.Context) {
 func (U *UseService) Login(ctx *gin.Context) {
 	var req = &domain.ReqLoginUser{}
 	var res = &http2.Response{}
-	if ctx.Bind(req) != nil {
+	err := ctx.Bind(req)
+	defer func() {
+		if err != nil {
+			U.logger.Infof("Login   Err:%s", err)
+		}
+
+	}()
+	if err != nil {
 		res.Code = http.StatusBadRequest
 		res.Msg = "数据格式不符合规范"
 	}
@@ -200,7 +218,14 @@ func (U *UseService) Edit(ctx *gin.Context) {
 	}
 	var info Edit
 	var respon = &http2.Response{}
-	if ctx.Bind(&info) != nil {
+	err := ctx.Bind(info)
+	defer func() {
+		if err != nil {
+			U.logger.Infof("Edit   Err:%s", err)
+		}
+
+	}()
+	if err != nil {
 		respon.Code = http.StatusBadRequest
 		respon.Msg = "请求参数不符合规范"
 		respon.Responses(ctx)
@@ -280,9 +305,16 @@ func (U *UseService) Profile(ctx *gin.Context) {
 	var resp = &http2.Response{}
 	//session := sessions.Default(ctx)
 	//email := session.Get(middleware.SessionIDKeyName)
+	var err error
+	defer func() {
+		if err != nil {
+			U.logger.Infof("Profile   Err:%s", err)
+		}
+	}()
 	value, exists := ctx.Get("email")
 	if !exists {
 		fmt.Println("未拿到数据")
+		err = errors.New("未拿到数据")
 		return
 	}
 	info, err := U.repo.GetProfileInfo(ctx, value)
@@ -310,7 +342,14 @@ func (U *UseService) Send(ctx *gin.Context) {
 
 	respon := &http2.Response{}
 	var reqs = req{}
-	if ctx.Bind(&reqs) != nil {
+	err := ctx.Bind(reqs)
+	defer func() {
+		if err != nil {
+			U.logger.Infof("Send   Err:%s", err)
+		}
+
+	}()
+	if err != nil {
 		respon.Code = http.StatusBadRequest
 		respon.Msg = "参数错误"
 		respon.Responses(ctx)

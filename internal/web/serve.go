@@ -15,7 +15,7 @@ func New(useService service.UserSer) *ServiceHandel {
 }
 func RegisterRoute(service *gin.Engine, S *ServiceHandel) {
 	// 使用中间件解决跨域问题
-	service.Use(middleware.LimiterMiddle(), middleware.Cors(), middleware.CheckLogin())
+	service.Use(middleware.LimiterMiddle(), middleware.Cors(), middleware.CheckLogin(), middleware.LoggerMiddle())
 
 	{
 		user := service.Group("/user")

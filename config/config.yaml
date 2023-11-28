@@ -1,4 +1,4 @@
-DB:
+db:
   mysql:
     username: root
     password: root
@@ -10,6 +10,5 @@ DB:
     port: 6379
     password:
     dbName: 0
-  ALiYun:
-    key_id:
-    secret: 
+  logger:
+    isDebug: true

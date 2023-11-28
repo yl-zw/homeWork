@@ -3,21 +3,21 @@ package config
 import (
 	"fmt"
 	Redis2 "github.com/go-redis/redis"
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"os"
 )
 
 var Con = &Config{}
 
 type Config struct {
-	DB *DbConfig `yaml:"DB"`
+	DB *DbConfig `yaml:"db"`
 }
 type DbConfig struct {
 	Mysql  *MysqlConfig `yaml:"mysql"`
 	Redis  *Redis       `yaml:"redis"`
-	ALiYun *AliYun      `yaml:"ALiYun"`
+	Logger *Logger      `yaml:"logger"`
 }
 type MysqlConfig struct {
 	Username string `yaml:"username"`
@@ -32,9 +32,8 @@ type Redis struct {
 	Address  string `yaml:"address"`
 	DbName   int    `yaml:"dbName"`
 }
-type AliYun struct {
-	KeyID  string `yaml:"key_id"`
-	Secret string `yaml:"secret"`
+type Logger struct {
+	IsDebug bool `yaml:"isDebug"`
 }
 
 func (d *DbConfig) Dns(flag bool) string {
@@ -45,28 +44,23 @@ func (d *DbConfig) Dns(flag bool) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", d.Mysql.Username, d.Mysql.Password, d.Mysql.Address, d.Mysql.Port, d.Mysql.DbName)
 }
 
-func InitConfig(configPath string) {
-	file, err := os.Open("./config/config.yaml")
+func InitConfig() {
+	cfg := pflag.String("path", "./config/dev.yaml", "配置文件路径")
+	isDebug := pflag.Bool("isdebug", true, "开始debug日志")
+	pflag.Parse()
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(*cfg)
+	err := viper.ReadInConfig()
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 		return
 	}
-	defer func(file *os.File) {
-		err = file.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}(file)
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(Con)
+	err = viper.Unmarshal(Con)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 		return
 	}
-	if Con.DB.Mysql == nil || Con.DB.Redis == nil {
-		fmt.Println("读取配置文件失败")
-		return
-	}
+	Con.DB.Logger.IsDebug = *isDebug
 
 }
 func NewDb() (*gorm.DB, *Redis2.Client, error) {

@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"github.com/gin-gonic/contrib/cors"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -17,9 +20,11 @@ import (
 const SessionIDKeyName = "userId"
 
 var Limiters *limiter.Limiter
+var Logger *zap.SugaredLogger
 
-func InitMiddle(engine *gin.Engine) {
+func InitMiddle(engine *gin.Engine, logger *zap.SugaredLogger) {
 	Limiters = limiter.NewLimit(1, 50)
+	Logger = logger
 	initSession(engine)
 
 }
@@ -46,6 +51,17 @@ func CheckLogin() gin.HandlerFunc {
 		sessionCheck(ctx) //通过session身份验证
 		//tokenCheck(ctx) //通过token身份验证
 
+	}
+}
+func LoggerMiddle() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		data, _ := ctx.GetRawData()
+		ctx.Request.Body = io.NopCloser(bytes.NewReader(data))
+		now := time.Now()
+		defer func() {
+			Logger.Debugf("%s %s\n %s ", ctx.Request.URL, time.Since(now), data)
+		}()
+		ctx.Next()
 	}
 }
 
